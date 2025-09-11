@@ -327,6 +327,7 @@ commentForm.addEventListener("submit", async e => {
         text: comment,
         user: currentUser.displayName,
         email: currentUser.email,
+        photoURL: currentUser.photoURL, 
         createdAt: serverTimestamp()
       });
       commentInput.value = "";
