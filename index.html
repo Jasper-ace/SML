@@ -353,6 +353,32 @@ commentForm.addEventListener("submit", async e => {
       commentList.appendChild(li);
     });
   });
+  let inactivityTime = function () {
+  let timer;
+
+  const resetTimer = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      if (currentUser) {
+        auth.signOut();            // Sign out the user
+        loginStatus.innerHTML = ""; // Clear login status
+        currentUser = null;
+      }
+    }, 3 * 60 * 1000); // 3 minutes
+  };
+
+  // Listen for user activity
+  window.onload = resetTimer;
+  window.onmousemove = resetTimer;
+  window.onmousedown = resetTimer;
+  window.onclick = resetTimer;
+  window.onscroll = resetTimer;
+  window.onkeypress = resetTimer;
+};
+
+// Start the inactivity timer
+inactivityTime();
+
 
   window.login = login;
 </script>
