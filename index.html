@@ -372,6 +372,36 @@ onSnapshot(q, snapshot => {
     commentList.appendChild(li);
   });
 });
+   const inactivityTime = function () {
+  let timer;
+
+  const resetTimer = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      if (currentUser) {
+        auth.signOut();            
+        loginStatus.innerHTML = ""; 
+        currentUser = null;
+      }
+    }, 3 * 60 * 1000); // 3 minutes
+  };
+
+  // Desktop events
+  window.onload = resetTimer;
+  window.onmousemove = resetTimer;
+  window.onmousedown = resetTimer;
+  window.onclick = resetTimer;
+  window.onscroll = resetTimer;
+  window.onkeypress = resetTimer;
+
+  // Mobile events
+  window.ontouchstart = resetTimer;
+  window.ontouchmove = resetTimer;
+  window.ontouchend = resetTimer;
+};
+
+inactivityTime();
+
 
 
   window.login = login;
