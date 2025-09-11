@@ -223,35 +223,48 @@
        class="email-btn">
        Send Email
     </a>
-  </section><!-- Comment Section -->
-<section id="comments" class="p-5">
-  <h2 class="section-title text-center">COMMENTS</h2>
+    </section>
+
+
+
+
+<section id="comments" class="placeholder-section p-5" style="background:#f8f9fa;">
+  <!-- Section Title -->
+  <h2 class="section-title text-">COMMENTS</h2>
 
   <!-- Login Status -->
   <div id="loginStatus" class="mb-3 text-center"></div>
 
   <!-- Comment Form -->
-  <form id="commentForm" class="mb-4" style="display:none;">
-    <div class="mb-3">
-      <textarea id="comment" class="form-control" rows="3" placeholder="Write your comment..." required></textarea>
+  <div class="card mb-4 shadow-sm" style="max-width:600px; margin:auto; border-radius:15px;">
+    <div class="card-body">
+      <form id="commentForm">
+        <div class="mb-3">
+          <textarea id="comment" class="form-control" rows="3" placeholder="Write your comment..." style="border-radius:10px; padding:10px;" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary w-100" style="background:#6a0dad; border:none; border-radius:10px;">Post Comment</button>
+      </form>
     </div>
-    <button type="submit" class="btn btn-primary" style="background:#6a0dad; border:none;">Post Comment</button>
-  </form>
+  </div>
 
   <!-- Display Comments -->
-  <div id="commentList" class="mt-4">
-    <h4>Recent Comments:</h4>
-    <ul class="list-group"></ul>
-  </div>
+<div id="commentList" class="mt-4" style="max-width:700px; margin:auto;">
+  <h4 class="text-center" style="color:#6a0dad; margin-bottom:20px;">Recent Comments:</h4>
+  <ul class="list-group" style="list-style:none; padding:0;">
+  </ul>
+</div>
+
 </section>
 
-<!-- Firebase SDK -->
+
+
+<!-- Firebase SDK and Comment Functionality -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  // 🔹 Firebase Config
+  // Firebase Config
   const firebaseConfig = {
     apiKey: "AIzaSyDZ7JGeSQ_O2ZfR77CcM6-qnAs47RCH-Os",
     authDomain: "sibol-comments.firebaseapp.com",
@@ -273,39 +286,43 @@
 
   let currentUser = null;
 
-  // 🔹 Login Function
+  // Google Login
   function login() {
     signInWithPopup(auth, provider)
-      .then((result) => {
+      .then(result => {
         const email = result.user.email;
         if (!email.endsWith("@lorma.edu")) {
-          alert("You must use your @lorma.edu email.");
+          alert("You must use your lorma.edu email.");
           auth.signOut();
         }
       })
-      .catch((error) => console.error("Login error:", error));
+      .catch(error => console.error("Login error:", error));
   }
 
-  // 🔹 Observe Auth State
-  onAuthStateChanged(auth, (user) => {
+  // Observe Auth State
+  onAuthStateChanged(auth, user => {
     if (user && user.email.endsWith("@lorma.edu")) {
       currentUser = user;
       loginStatus.innerHTML = `<p>Signed in as <strong>${user.displayName}</strong></p>`;
-      commentForm.style.display = "block";
     } else {
       currentUser = null;
-      loginStatus.innerHTML = `<button class="btn btn-primary" style="background:#6a0dad; border:none;" onclick="login()">Sign in with Lorma Email</button>`;
-      commentForm.style.display = "none";
     }
   });
 
-  // 🔹 Submit Comment
-  commentForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    if (!currentUser) return alert("Please sign in first.");
+  // Submit Comment
+// Submit Comment
+commentForm.addEventListener("submit", async e => {
+  e.preventDefault();
 
-    const comment = commentInput.value.trim();
-    if (comment) {
+  if (!currentUser) {
+    // alert("You must sign in to post a comment.");  <-- removed
+    login();
+    return;
+  }
+
+  const comment = commentInput.value.trim();
+  if (comment) {
+    try {
       await addDoc(collection(db, "comments"), {
         text: comment,
         user: currentUser.displayName,
@@ -313,22 +330,29 @@
         createdAt: serverTimestamp()
       });
       commentInput.value = "";
+    } catch (error) {
+      console.error("Error posting comment:", error);
+      alert("Failed to post comment. Try again later.");
     }
-  });
+  }
+});
 
-  // 🔹 Real-time Comments
+  // Real-time Comments
   const q = query(collection(db, "comments"), orderBy("createdAt", "desc"));
-  onSnapshot(q, (snapshot) => {
+  onSnapshot(q, snapshot => {
     commentList.innerHTML = "";
-    snapshot.forEach((doc) => {
+    snapshot.forEach(doc => {
       const data = doc.data();
       const li = document.createElement("li");
       li.className = "list-group-item";
-      li.innerHTML = `<strong>${data.user}:</strong> ${data.text}`;
+      li.style.borderRadius = "10px";
+      li.style.marginBottom = "10px";
+      li.style.boxShadow = "0 2px 5px rgba(0,0,0,0.1)";
+      li.style.padding = "10px 15px";
+      li.innerHTML = `<strong>${data.user || "Anonymous"}:</strong> ${data.text}`;
       commentList.appendChild(li);
     });
   });
 
-  // Make login function global
   window.login = login;
 </script>
