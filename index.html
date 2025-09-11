@@ -228,7 +228,7 @@
 
 
 
-<section id="comments" class="placeholder-section p-5" style="background:#f8f9fa;">
+<section id="comments" class="placeholder-section p-5">
   <!-- Section Title -->
   <h2 class="section-title text-">COMMENTS</h2>
 
@@ -259,7 +259,8 @@
 
 
 <!-- Firebase SDK and Comment Functionality -->
-<script type="module">
+ 
+ <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -292,8 +293,8 @@
       .then(result => {
         const email = result.user.email;
         if (!email.endsWith("@lorma.edu")) {
-          alert("You must use your lorma.edu email.");
           auth.signOut();
+          currentUser = null;
         }
       })
       .catch(error => console.error("Login error:", error));
@@ -303,82 +304,74 @@
   onAuthStateChanged(auth, user => {
     if (user && user.email.endsWith("@lorma.edu")) {
       currentUser = user;
-      loginStatus.innerHTML = `<p>Signed in as <strong>${user.displayName}</strong></p>`;
+      loginStatus.innerHTML = `
+        <p class="text-center">
+          Signed in as <strong>${user.displayName}</strong>
+        </p>`;
     } else {
       currentUser = null;
+      loginStatus.innerHTML = `<p class="text-center">Not signed in</p>`;
     }
   });
 
   // Submit Comment
-// Submit Comment
-commentForm.addEventListener("submit", async e => {
-  e.preventDefault();
-
-  if (!currentUser) {
-    // alert("You must sign in to post a comment.");  <-- removed
-    login();
-    return;
-  }
-
-  const comment = commentInput.value.trim();
-  if (comment) {
-    try {
-      await addDoc(collection(db, "comments"), {
-        text: comment,
-        user: currentUser.displayName,
-        email: currentUser.email,
-        photoURL: currentUser.photoURL, 
-        createdAt: serverTimestamp()
-      });
-      commentInput.value = "";
-    } catch (error) {
-      console.error("Error posting comment:", error);
-      alert("Failed to post comment. Try again later.");
+  commentForm.addEventListener("submit", async e => {
+    e.preventDefault();
+    if (!currentUser) {
+      login(); // prompt login if not signed in
+      return;
     }
-  }
-});
+
+    const comment = commentInput.value.trim();
+    if (comment) {
+      try {
+        await addDoc(collection(db, "comments"), {
+          text: comment,
+          user: currentUser.displayName,
+          email: currentUser.email,
+          photoURL: currentUser.photoURL,  // store user profile picture
+          createdAt: serverTimestamp()
+        });
+        commentInput.value = "";
+      } catch (error) {
+        console.error("Error posting comment:", error);
+      }
+    }
+  });
 
   // Real-time Comments
-  const q = query(collection(db, "comments"), orderBy("createdAt", "desc"));
-  onSnapshot(q, snapshot => {
-    commentList.innerHTML = "";
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      const li = document.createElement("li");
-      li.className = "list-group-item";
-      li.style.borderRadius = "10px";
-      li.style.marginBottom = "10px";
-      li.style.boxShadow = "0 2px 5px rgba(0,0,0,0.1)";
-      li.style.padding = "10px 15px";
-      li.innerHTML = `<strong>${data.user || "Anonymous"}:</strong> ${data.text}`;
-      commentList.appendChild(li);
-    });
+const q = query(collection(db, "comments"), orderBy("createdAt", "desc"));
+onSnapshot(q, snapshot => {
+  commentList.innerHTML = "";
+  snapshot.forEach(doc => {
+    const data = doc.data();
+    
+    const li = document.createElement("li");
+    li.className = "list-group-item";
+    li.style.borderRadius = "10px";
+    li.style.marginBottom = "15px";
+    li.style.boxShadow = "0 2px 5px rgba(0,0,0,0.1)";
+    li.style.padding = "10px 15px";
+    li.style.display = "flex"; // Flex layout
+    li.style.alignItems = "flex-start"; // Align top
+    li.style.gap = "10px"; // Space between picture and comment
+
+    li.innerHTML = `
+  <div style="display:flex; align-items:flex-start; gap:10px;">
+    <img src="${data.photoURL || 'images/default.png'}" 
+         alt="Profile" 
+         style="width:40px; height:40px; border-radius:50%;">
+    <div style="max-width:90%; word-wrap: break-word; word-break: break-word; text-align:left;">
+      <strong style="display:block;">${data.user || "Anonymous"}</strong>
+      <p style="margin:5px 0 0 0;">${data.text}</p>
+    </div>
+  </div>
+`;
+
+
+    commentList.appendChild(li);
   });
-  let inactivityTime = function () {
-  let timer;
-
-  const resetTimer = () => {
-    clearTimeout(timer);
-    timer = setTimeout(() => {
-      if (currentUser) {
-        auth.signOut();            // Sign out the user
-        loginStatus.innerHTML = ""; // Clear login status
-        currentUser = null;
-      }
-    }, 3 * 60 * 1000); // 3 minutes
-  };
-
-  // Listen for user activity
-  window.onload = resetTimer;
-  window.onmousemove = resetTimer;
-  window.onmousedown = resetTimer;
-  window.onclick = resetTimer;
-  window.onscroll = resetTimer;
-  window.onkeypress = resetTimer;
-};
-
-// Start the inactivity timer
-inactivityTime();
+});
 
 
   window.login = login;
